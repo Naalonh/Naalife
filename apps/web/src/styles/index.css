@@ -1,0 +1,263 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Design tokens. Dark is the default (deep ink-navy + cyan + violet accent).
+  `.light` swaps to a soft, airy palette. Surfaces are translucent "glass" layered
+  over a fixed aurora background.
+*/
+:root {
+  --background: 232 38% 6%;
+  --foreground: 210 40% 97%;
+  --card: 232 30% 11%;
+  --muted: 232 24% 17%;
+  --muted-foreground: 225 16% 66%;
+  --border: 230 24% 24%;
+  --primary: 186 94% 48%;
+  --primary-foreground: 196 100% 6%;
+  --accent: 256 92% 70%;
+  --danger: 350 92% 64%;
+  --warning: 38 95% 56%;
+  --info: 217 92% 66%;
+  --shadow: 232 60% 2%;
+  --glass: 232 30% 12%;
+  color-scheme: dark;
+}
+
+:root.light {
+  --background: 220 33% 97%;
+  --foreground: 228 40% 10%;
+  --card: 0 0% 100%;
+  --muted: 220 28% 94%;
+  --muted-foreground: 224 14% 40%;
+  --border: 220 22% 86%;
+  --primary: 188 94% 31%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 256 75% 56%;
+  --danger: 347 80% 50%;
+  --warning: 30 95% 42%;
+  --info: 217 85% 46%;
+  --shadow: 225 30% 45%;
+  --glass: 0 0% 100%;
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-background font-sans text-foreground antialiased;
+  font-feature-settings: 'cv11', 'ss01', 'tnum';
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+/* aurora backdrop */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(55% 38% at 8% -6%, hsl(var(--primary) / 0.22), transparent 70%),
+    radial-gradient(48% 34% at 104% 2%, hsl(var(--accent) / 0.20), transparent 70%),
+    radial-gradient(60% 40% at 50% 112%, hsl(var(--info) / 0.12), transparent 70%);
+}
+
+/* Device notch/home bar, plus Telegram own overlay (close + menu buttons) in fullscreen mode. */
+.pt-safe {
+  padding-top: max(
+    env(safe-area-inset-top, 0px),
+    calc(var(--tg-viewport-safe-area-inset-top, 0px) + var(--tg-viewport-content-safe-area-inset-top, 0px))
+  );
+}
+.pb-safe {
+  padding-bottom: max(
+    env(safe-area-inset-bottom, 0px),
+    calc(var(--tg-viewport-safe-area-inset-bottom, 0px) + var(--tg-viewport-content-safe-area-inset-bottom, 0px))
+  );
+}
+
+input[type='date'],
+input[type='time'] {
+  min-height: 2.75rem;
+}
+input[type='range'] {
+  height: 6px;
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+@layer components {
+  /* translucent surface with hairline highlight */
+  .glass {
+    background: hsl(var(--glass) / 0.62);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    backdrop-filter: blur(22px) saturate(160%);
+    border: 1px solid hsl(var(--foreground) / 0.08);
+    box-shadow:
+      inset 0 1px 0 hsl(var(--foreground) / 0.06),
+      0 10px 30px -14px hsl(var(--shadow) / 0.55);
+  }
+
+  .text-gradient {
+    background: linear-gradient(120deg, hsl(var(--primary)), hsl(var(--info)) 55%, hsl(var(--accent)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* hero card: layered mesh gradient */
+  .hero {
+    background:
+      radial-gradient(90% 120% at 0% 0%, hsl(var(--primary) / 0.95), transparent 60%),
+      radial-gradient(80% 110% at 100% 0%, hsl(var(--accent) / 0.9), transparent 62%),
+      radial-gradient(90% 100% at 60% 130%, hsl(var(--info) / 0.8), transparent 60%),
+      hsl(232 40% 10%);
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 0.22),
+      0 24px 48px -20px hsl(var(--primary) / 0.45);
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(hsl(0 0% 100% / 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(0 0% 100% / 0.05) 1px, transparent 1px);
+    background-size: 26px 26px;
+    mask-image: radial-gradient(70% 90% at 80% 0%, #000, transparent);
+    pointer-events: none;
+  }
+
+  .skeleton {
+    @apply relative overflow-hidden rounded-2xl bg-muted/70;
+  }
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, hsl(var(--foreground) / 0.08), transparent);
+    animation: shimmer 1.4s infinite;
+  }
+}
+
+/* staggered entrance for bento tiles */
+.rise {
+  animation: rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .animate-fade-up {
+    animation: none !important;
+  }
+}
+
+/* ---- page + list motion ---------------------------------------------------
+   Any container with `.stagger` reveals its children one after another.
+   Used on every page root, tab body and list so navigation always feels alive. */
+.stagger > * {
+  animation: rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 45ms; }
+.stagger > *:nth-child(3) { animation-delay: 90ms; }
+.stagger > *:nth-child(4) { animation-delay: 135ms; }
+.stagger > *:nth-child(5) { animation-delay: 180ms; }
+.stagger > *:nth-child(6) { animation-delay: 225ms; }
+.stagger > *:nth-child(7) { animation-delay: 270ms; }
+.stagger > *:nth-child(8) { animation-delay: 315ms; }
+.stagger > *:nth-child(9) { animation-delay: 360ms; }
+.stagger > *:nth-child(n + 10) { animation-delay: 400ms; }
+
+/* quick fade used when swapping tab content */
+.tab-pane {
+  animation: tabIn 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes tabIn {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* press feedback for tappable rows/cards */
+.pressable {
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+.pressable:active {
+  transform: scale(0.985);
+}
+
+@keyframes checkPop {
+  0% { transform: scale(0.6); }
+  60% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+.check-pop {
+  animation: checkPop 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stagger > *,
+  .tab-pane,
+  .check-pop {
+    animation: none !important;
+  }
+}
+
+/* ---- auth / splash screen ------------------------------------------------ */
+@keyframes orbit {
+  to { transform: rotate(360deg); }
+}
+@keyframes floaty {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-8px) rotate(2deg); }
+}
+@keyframes indeterminate {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(380%); }
+}
+.auth-orbit { animation: orbit 7s linear infinite; }
+.auth-orbit-rev { animation: orbit 11s linear infinite reverse; }
+.auth-float { animation: floaty 5s ease-in-out infinite; }
+.auth-indeterminate { animation: indeterminate 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .auth-orbit, .auth-orbit-rev, .auth-float, .auth-indeterminate { animation: none !important; }
+}
+
+/* Khmer: tall stacked glyphs need more line height, and letter-spacing breaks clusters */
+html[lang='km'] body {
+  line-height: 1.65;
+}
+html[lang='km'] * {
+  letter-spacing: normal !important;
+}
+html[lang='km'] .leading-none,
+html[lang='km'] .leading-tight {
+  line-height: 1.5;
+}

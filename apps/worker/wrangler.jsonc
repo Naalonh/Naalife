@@ -1,0 +1,25 @@
+{
+  // Cloudflare Worker: REST API (/api/*), Telegram webhook (/telegram/webhook) and cron.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pla-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2024-12-01",
+  "workers_dev": true,
+
+  // Non-secret configuration. Replace the URLs with yours (see README).
+  "vars": {
+    "ENVIRONMENT": "production",
+    "APP_URL": "https://pla-web.lonhvanna33.workers.dev",
+    "API_URL": "https://pla-api.lonhvanna33.workers.dev"
+  },
+
+  // Cron runs in UTC. A 5-minute poll plus timezone-aware logic in code delivers
+  // reminders at the owner's local times (Asia/Phnom_Penh by default).
+  "triggers": { "crons": ["*/5 * * * *"] },
+
+  "observability": { "enabled": true }
+
+  // Secrets (never put these here, use `wrangler secret put <NAME>`):
+  //   TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET, OWNER_TELEGRAM_ID,
+  //   SUPABASE_URL, SUPABASE_SECRET_KEY
+}

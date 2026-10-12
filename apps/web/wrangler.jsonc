@@ -1,0 +1,11 @@
+{
+  // Static hosting for the Mini App on Cloudflare (Workers Static Assets). No server code.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pla-web",
+  "compatibility_date": "2024-12-01",
+  "assets": {
+    "directory": "./dist",
+    // client-side routing: unknown paths serve index.html
+    "not_found_handling": "single-page-application"
+  }
+}
