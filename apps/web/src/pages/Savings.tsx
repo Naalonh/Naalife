@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Pencil, PiggyBank, Plus, RotateCcw, Sparkles, Target, Trophy } from 'lucide-react';
-import type { SavingsGoal } from '@pla/shared';
+import { khqrAccountFromSettings, khqrMissing, type SavingsGoal } from '@pla/shared';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge, Card, CardTitle, Skeleton } from '@/components/ui/card';
@@ -9,6 +9,8 @@ import { Ring } from '@/components/ui/ring';
 import { Segmented } from '@/components/ui/segmented';
 import { Sheet } from '@/components/ui/sheet';
 import { GoalCard } from '@/components/savings/GoalCard';
+import { KhqrImage } from '@/components/savings/KhqrImage';
+import { useOwner } from '@/contexts/AuthContext';
 import { useSheets } from '@/contexts/SheetContext';
 import { useAccounts, useApiMutation, useContributions, useDashboard, useGoals } from '@/hooks/queries';
 import { api } from '@/lib/api';
@@ -174,6 +176,9 @@ export default function Savings() {
   const sheets = useSheets();
   const [view, setView] = useState<View>('active');
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [qrGoal, setQrGoal] = useState<SavingsGoal | null>(null);
+  const me = useOwner();
+  const khqrReady = khqrMissing(khqrAccountFromSettings(me.settings)).length === 0;
   const goalsQ = useGoals(true);
   const d = useDashboard().data;
 
@@ -282,6 +287,8 @@ export default function Savings() {
         </Card>
       )}
 
+      {qrGoal && <KhqrImage goal={qrGoal} onClose={() => setQrGoal(null)} />}
+
       <div key={view} className="tab-pane stagger space-y-3">
         {shown.map((g) => (
           <GoalCard
@@ -289,6 +296,7 @@ export default function Savings() {
             goal={g}
             onOpen={() => setDetailId(g.id)}
             onAdd={g.status === 'active' ? () => sheets.open({ kind: 'contribution', goal: g }) : undefined}
+            onQr={g.status === 'active' && khqrReady ? () => setQrGoal(g) : undefined}
           />
         ))}
       </div>

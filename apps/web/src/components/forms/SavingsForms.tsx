@@ -4,11 +4,11 @@ import { QRCodeSVG } from 'qrcode.react';
 import { Link } from 'react-router-dom';
 import {
   buildKhqr,
+  khqrAccountFromSettings,
   khqrMissing,
   scheduleStatus,
   toMajorString,
   type Currency,
-  type KhqrAccount,
   type SavingsGoal,
 } from '@pla/shared';
 import { AmountField, toMinor } from '@/components/AmountField';
@@ -69,16 +69,7 @@ export function ContributionForm({ goal: initial, onDone }: { goal?: SavingsGoal
   const [now, setNow] = useState(Date.now());
 
   const st = me.settings;
-  const khqrAccount: KhqrAccount = {
-    account_type: st.bakong_account_type,
-    account_id: st.bakong_account_id ?? '',
-    merchant_name: st.bakong_merchant_name ?? '',
-    merchant_city: st.bakong_merchant_city,
-    phone: st.bakong_phone,
-    merchant_id: st.bakong_merchant_id,
-    acquiring_bank: st.bakong_acquiring_bank,
-    store_label: st.bakong_store_label,
-  };
+  const khqrAccount = khqrAccountFromSettings(st);
   const khqrReady = khqrMissing(khqrAccount).length === 0;
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { CalendarClock, CheckCircle2, Flag, Plus, Trophy } from 'lucide-react';
+import { CalendarClock, CheckCircle2, Flag, Plus, QrCode, Trophy } from 'lucide-react';
 import { scheduleStatus, type SavingsGoal } from '@pla/shared';
 import { useOwner } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -41,10 +41,13 @@ export function GoalCard({
   goal,
   onAdd,
   onOpen,
+  onQr,
 }: {
   goal: SavingsGoal;
   onAdd?: () => void;
   onOpen?: () => void;
+  /** show the KHQR for today's amount; omitted when Bakong isn't set up */
+  onQr?: () => void;
 }) {
   const { fmt } = useMoney();
   const { today } = useOwner();
@@ -130,6 +133,11 @@ export function GoalCard({
             )}
             {sched.state === 'on_track' && <p className="text-[11px] font-bold text-muted-foreground">{t('On track')}</p>}
           </div>
+          {onQr && goal.daily_requirement_minor > 0 && (
+            <Button size="md" variant="secondary" className="shrink-0" onClick={onQr} aria-label={t('Show KHQR')}>
+              <QrCode className="h-4 w-4" />
+            </Button>
+          )}
           {onAdd && (
             <Button size="md" className="shrink-0" onClick={onAdd}>
               <Plus className="h-4 w-4" strokeWidth={2.6} /> {t('Add')}

@@ -1,5 +1,6 @@
 import { type Currency } from './constants';
 import { toMajorString } from './money';
+import type { Settings } from './types';
 
 /**
  * KHQR (Bakong) payload builder. KHQR is EMV-QR TLV with a CRC-16/CCITT-FALSE trailer.
@@ -113,4 +114,18 @@ export function buildKhqr(input: KhqrInput): string {
     (dynamic ? tlv('99', tlv('00', String(now)) + tlv('01', String(expires))) : '') +
     '6304';
   return body + crc16(body);
+}
+
+/** The receiving account stored in user settings, in the shape the builder wants. */
+export function khqrAccountFromSettings(s: Settings): KhqrAccount {
+  return {
+    account_type: s.bakong_account_type,
+    account_id: s.bakong_account_id ?? '',
+    merchant_name: s.bakong_merchant_name ?? '',
+    merchant_city: s.bakong_merchant_city,
+    phone: s.bakong_phone,
+    merchant_id: s.bakong_merchant_id,
+    acquiring_bank: s.bakong_acquiring_bank,
+    store_label: s.bakong_store_label,
+  };
 }
