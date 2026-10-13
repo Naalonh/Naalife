@@ -22,6 +22,14 @@ interface SettingsRow {
   default_account_id: string | null;
   task_reminders_enabled: boolean;
   budget_alerts_enabled: boolean;
+  bakong_account_type: 'individual' | 'merchant';
+  bakong_account_id: string | null;
+  bakong_merchant_name: string | null;
+  bakong_merchant_city: string;
+  bakong_phone: string | null;
+  bakong_merchant_id: string | null;
+  bakong_acquiring_bank: string | null;
+  bakong_store_label: string | null;
 }
 
 interface PrefRow {
@@ -70,6 +78,14 @@ export async function loadSettings(db: Db, ownerId: string): Promise<Settings> {
     default_account_id: row?.default_account_id ?? null,
     task_reminders_enabled: row?.task_reminders_enabled ?? true,
     budget_alerts_enabled: row?.budget_alerts_enabled ?? true,
+    bakong_account_type: row?.bakong_account_type ?? 'individual',
+    bakong_account_id: row?.bakong_account_id ?? null,
+    bakong_merchant_name: row?.bakong_merchant_name ?? null,
+    bakong_merchant_city: row?.bakong_merchant_city ?? 'Phnom Penh',
+    bakong_phone: row?.bakong_phone ?? null,
+    bakong_merchant_id: row?.bakong_merchant_id ?? null,
+    bakong_acquiring_bank: row?.bakong_acquiring_bank ?? null,
+    bakong_store_label: row?.bakong_store_label ?? null,
     notifications: NOTIFICATION_KINDS.map((kind) => {
       const found = prefs.find((x) => x.kind === kind);
       return {

@@ -1,6 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { Banknote, Check, CircleSlash, Landmark, PiggyBank, Smartphone, type LucideIcon } from 'lucide-react';
-import { scheduleStatus, toMajorString, type Currency, type SavingsGoal } from '@pla/shared';
+import { Banknote, Check, CircleSlash, Landmark, PiggyBank, QrCode, Smartphone, type LucideIcon } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+import { Link } from 'react-router-dom';
+import {
+  buildKhqr,
+  khqrMissing,
+  scheduleStatus,
+  toMajorString,
+  type Currency,
+  type KhqrAccount,
+  type SavingsGoal,
+} from '@pla/shared';
 import { AmountField, toMinor } from '@/components/AmountField';
 import { Button } from '@/components/ui/button';
 import { Field, Input, Select } from '@/components/ui/input';
@@ -55,6 +65,42 @@ export function ContributionForm({ goal: initial, onDone }: { goal?: SavingsGoal
   const [note, setNote] = useState('');
   const [error, setError] = useState<string>();
   const [requestId] = useState(newRequestId);
+  const [qr, setQr] = useState<{ value: string; amount: string; expiresAt: number } | null>(null);
+  const [now, setNow] = useState(Date.now());
+
+  const st = me.settings;
+  const khqrAccount: KhqrAccount = {
+    account_type: st.bakong_account_type,
+    account_id: st.bakong_account_id ?? '',
+    merchant_name: st.bakong_merchant_name ?? '',
+    merchant_city: st.bakong_merchant_city,
+    phone: st.bakong_phone,
+    merchant_id: st.bakong_merchant_id,
+    acquiring_bank: st.bakong_acquiring_bank,
+    store_label: st.bakong_store_label,
+  };
+  const khqrReady = khqrMissing(khqrAccount).length === 0;
+
+  useEffect(() => {
+    if (!qr) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [qr]);
+
+  function showQr() {
+    const p = toMinor(amount, currency);
+    if ('error' in p) return setError(p.error);
+    if (!goal) return setError(t('Choose a goal'));
+    setError(undefined);
+    try {
+      const at = new Date();
+      const value = buildKhqr({ account: khqrAccount, currency, amount_minor: p.minor, note: goal.name, now: at });
+      setNow(at.getTime());
+      setQr({ value, amount: fmt(p.minor, currency), expiresAt: at.getTime() + 15 * 60_000 });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('Could not create the QR'));
+    }
+  }
 
   // pre-select the account you used last time (bank or cash), until you pick one yourself
   useEffect(() => {
@@ -126,6 +172,34 @@ export function ContributionForm({ goal: initial, onDone }: { goal?: SavingsGoal
           };
         })()
       : null;
+
+  if (qr) {
+    const left = Math.max(0, Math.round((qr.expiresAt - now) / 1000));
+    const expired = left === 0;
+    return (
+      <div className="space-y-4 text-center">
+        <p className="text-sm text-muted-foreground">
+          {t('Scan with any Bakong / bank app to send {0} to {1}', qr.amount, st.bakong_merchant_name ?? '')}
+        </p>
+        <div className={cn('mx-auto w-fit rounded-3xl bg-white p-4 transition-opacity', expired && 'opacity-30')}>
+          <QRCodeSVG value={qr.value} size={224} level="M" />
+        </div>
+        <p className="text-2xl font-extrabold tabular-nums">{qr.amount}</p>
+        <p className={cn('text-xs font-semibold tabular-nums', expired ? 'text-danger' : 'text-muted-foreground')}>
+          {expired
+            ? t('This QR has expired')
+            : t('Expires in {0}', `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`)}
+        </p>
+        {error && <p className="text-sm font-semibold text-danger">{error}</p>}
+        <Button size="lg" className="w-full" disabled={busy || expired} onClick={() => void submit()}>
+          {busy ? t('Saving…') : t('I have paid · add to savings')}
+        </Button>
+        <Button variant="secondary" className="w-full" onClick={() => setQr(null)}>
+          {t('Back')}
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <form
@@ -251,6 +325,18 @@ export function ContributionForm({ goal: initial, onDone }: { goal?: SavingsGoal
       <Button type="submit" size="lg" className="w-full" disabled={busy}>
         {busy ? t('Saving…') : t('Add to savings')}
       </Button>
+      {khqrReady ? (
+        <Button type="button" variant="secondary" size="lg" className="w-full" disabled={busy || !amount} onClick={showQr}>
+          <QrCode className="mr-2 h-4 w-4" /> {t('Pay with KHQR')}
+        </Button>
+      ) : (
+        <p className="text-center text-xs text-muted-foreground">
+          <Link to="/settings" className="font-semibold text-primary" onClick={onDone}>
+            {t('Set up Bakong KHQR in Settings')}
+          </Link>{' '}
+          {t('to pay by QR.')}
+        </p>
+      )}
     </form>
   );
 }

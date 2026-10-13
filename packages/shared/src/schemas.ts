@@ -208,6 +208,14 @@ export const routineCompleteSchema = z.object({
 });
 
 // ---- settings ---------------------------------------------------------------
+/** Optional text: blank clears it (null). */
+function bakongText(max: number, pattern?: RegExp, message?: string) {
+  const base = z.string().trim().max(max);
+  return z
+    .union([pattern ? base.regex(pattern, message) : base, z.null()])
+    .transform((v) => (v === '' ? null : v));
+}
+
 export const settingsUpdateSchema = z
   .object({
     preferred_currency: currencySchema,
@@ -218,6 +226,14 @@ export const settingsUpdateSchema = z
     default_account_id: uuidSchema.nullable(),
     task_reminders_enabled: z.boolean(),
     budget_alerts_enabled: z.boolean(),
+    bakong_account_type: z.enum(['individual', 'merchant']),
+    bakong_account_id: bakongText(32, /^[A-Za-z0-9_.-]+@[A-Za-z0-9_]+$/, 'Use the form name@bank, e.g. lonhv@aclb'),
+    bakong_merchant_name: bakongText(25),
+    bakong_merchant_city: z.string().trim().min(1).max(15),
+    bakong_phone: bakongText(25, /^\+?\d{6,24}$/, 'Digits only, e.g. 855 12 345 678 without spaces'),
+    bakong_merchant_id: bakongText(32),
+    bakong_acquiring_bank: bakongText(32),
+    bakong_store_label: bakongText(25),
     notifications: z
       .array(z.object({ kind: z.enum(NOTIFICATION_KINDS), enabled: z.boolean(), local_time: timeSchema }))
       .max(NOTIFICATION_KINDS.length),

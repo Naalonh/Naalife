@@ -156,6 +156,14 @@ export interface Settings {
   default_account_id: string | null;
   task_reminders_enabled: boolean;
   budget_alerts_enabled: boolean;
+  bakong_account_type: 'individual' | 'merchant';
+  bakong_account_id: string | null;
+  bakong_merchant_name: string | null;
+  bakong_merchant_city: string;
+  bakong_phone: string | null;
+  bakong_merchant_id: string | null;
+  bakong_acquiring_bank: string | null;
+  bakong_store_label: string | null;
   notifications: Array<{ kind: NotificationKind; enabled: boolean; local_time: string }>;
 }
 

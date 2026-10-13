@@ -10,6 +10,7 @@ import {
   Landmark,
   MoonStar,
   Palette,
+  QrCode,
   PiggyBank,
   ShieldCheck,
   Smartphone,
@@ -21,7 +22,7 @@ import {
 import { CURRENCIES, type Currency, type NotificationKind, type Settings as SettingsT } from '@pla/shared';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Input, Select } from '@/components/ui/input';
+import { Field, Input, Select } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { useOwner } from '@/contexts/AuthContext';
 import { applyTheme } from '@/contexts/ThemeContext';
@@ -117,6 +118,131 @@ const THEMES: Array<{ id: SettingsT['theme']; label: string; icon: LucideIcon; b
   { id: 'light', label: t('Light'), icon: Sun, bg: 'bg-[#f3f6fb]', fg: 'bg-slate-300' },
   { id: 'system', label: t('Telegram'), icon: Smartphone, bg: 'bg-gradient-to-br from-[#0b1020] to-[#f3f6fb]', fg: 'bg-slate-400/60' },
 ];
+
+const BAKONG_FIELDS = [
+  'bakong_account_type',
+  'bakong_account_id',
+  'bakong_merchant_name',
+  'bakong_merchant_city',
+  'bakong_phone',
+  'bakong_merchant_id',
+  'bakong_acquiring_bank',
+  'bakong_store_label',
+] as const;
+
+/** Receiving Bakong account: everything KHQR needs to build a payment QR. */
+function BakongSection({
+  settings,
+  onSave,
+  saving,
+}: {
+  settings: SettingsT;
+  onSave: (p: Partial<SettingsT>) => Promise<void>;
+  saving: boolean;
+}) {
+  const fromSettings = () =>
+    Object.fromEntries(BAKONG_FIELDS.map((k) => [k, settings[k] ?? ''])) as Record<string, string>;
+  const [f, setF] = useState(fromSettings);
+  useEffect(() => {
+    setF(fromSettings());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings]);
+  const merchant = f.bakong_account_type === 'merchant';
+  const set = (k: string) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
+  const missing = [
+    !f.bakong_account_id && t('Bakong account ID'),
+    !f.bakong_merchant_name && t('Account name'),
+    !f.bakong_merchant_city && t('City'),
+    merchant && !f.bakong_merchant_id && t('Merchant ID'),
+    merchant && !f.bakong_acquiring_bank && t('Acquiring bank'),
+  ].filter(Boolean);
+  const dirty = BAKONG_FIELDS.some((k) => (f[k] ?? '') !== (settings[k] ?? ''));
+
+  return (
+    <Section title={t('Bakong KHQR')}>
+      <Row
+        icon={QrCode}
+        tone="bg-primary/15 text-primary"
+        title={t('Receive savings by KHQR')}
+        hint={t('Your Bakong account, used to build the payment QR when you add to a goal')}
+      />
+      <div className="space-y-3 px-4 py-3.5">
+        <div className="glass inline-flex rounded-full p-1">
+          {(['individual', 'merchant'] as const).map((k) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => setF({ ...f, bakong_account_type: k })}
+              className={cn(
+                'rounded-full px-4 py-1.5 text-xs font-bold transition-all',
+                f.bakong_account_type === k ? 'bg-primary text-primary-foreground shadow-glow' : 'text-muted-foreground',
+              )}
+            >
+              {k === 'individual' ? t('Individual') : t('Merchant')}
+            </button>
+          ))}
+        </div>
+        <Field label={t('Bakong account ID')} hint={t('Shown in your bank app, like name@bank')}>
+          <Input
+            value={f.bakong_account_id}
+            maxLength={32}
+            autoCapitalize="none"
+            placeholder="lonhv@aclb"
+            onChange={set('bakong_account_id')}
+          />
+        </Field>
+        <Field label={t('Account name')} hint={t('Shown to the payer (max 25 characters)')}>
+          <Input value={f.bakong_merchant_name} maxLength={25} onChange={set('bakong_merchant_name')} />
+        </Field>
+        <Field label={t('City')}>
+          <Input value={f.bakong_merchant_city} maxLength={15} onChange={set('bakong_merchant_city')} />
+        </Field>
+        <Field label={t('Phone (optional)')}>
+          <Input
+            inputMode="tel"
+            value={f.bakong_phone}
+            maxLength={25}
+            placeholder="85512345678"
+            onChange={set('bakong_phone')}
+          />
+        </Field>
+        {merchant && (
+          <>
+            <Field label={t('Merchant ID')}>
+              <Input value={f.bakong_merchant_id} maxLength={32} onChange={set('bakong_merchant_id')} />
+            </Field>
+            <Field label={t('Acquiring bank')} hint={t('For example: ACLEDA Bank')}>
+              <Input value={f.bakong_acquiring_bank} maxLength={32} onChange={set('bakong_acquiring_bank')} />
+            </Field>
+            <Field label={t('Store label (optional)')}>
+              <Input value={f.bakong_store_label} maxLength={25} onChange={set('bakong_store_label')} />
+            </Field>
+          </>
+        )}
+        {missing.length > 0 && <p className="text-xs text-warning">{t('Still needed: {0}', missing.join(', '))}</p>}
+        <Button
+          className="w-full"
+          variant={dirty ? 'primary' : 'secondary'}
+          disabled={saving || !dirty}
+          onClick={() =>
+            void onSave({
+              bakong_account_type: f.bakong_account_type as SettingsT['bakong_account_type'],
+              bakong_account_id: f.bakong_account_id.trim() || null,
+              bakong_merchant_name: f.bakong_merchant_name.trim() || null,
+              bakong_merchant_city: f.bakong_merchant_city.trim() || 'Phnom Penh',
+              bakong_phone: f.bakong_phone.trim() || null,
+              bakong_merchant_id: merchant ? f.bakong_merchant_id.trim() || null : null,
+              bakong_acquiring_bank: f.bakong_acquiring_bank.trim() || null,
+              bakong_store_label: merchant ? f.bakong_store_label.trim() || null : null,
+            })
+          }
+        >
+          {t('Save')}
+        </Button>
+      </div>
+    </Section>
+  );
+}
 
 export default function Settings() {
   const me = useOwner();
@@ -234,6 +360,8 @@ export default function Settings() {
           </Select>
         </Row>
       </Section>
+
+      <BakongSection settings={s} saving={save.isPending} onSave={(p) => patch(p, t('Bakong account saved'))} />
 
       {/* appearance */}
       <section className="space-y-2">
